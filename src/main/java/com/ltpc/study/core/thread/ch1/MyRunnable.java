@@ -1,4 +1,4 @@
-package com.ltpc.study.core.thread;
+package com.ltpc.study.core.thread.ch1;
 
 public class MyRunnable implements Runnable {
 	private int ticket = 5;

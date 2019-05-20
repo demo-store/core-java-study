@@ -1,4 +1,4 @@
-package com.ltpc.study.core.thread;
+package com.ltpc.study.core.thread.ch1;
 
 import java.time.LocalDateTime;
 import java.util.concurrent.TimeUnit;
