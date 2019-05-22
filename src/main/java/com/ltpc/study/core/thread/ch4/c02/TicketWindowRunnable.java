@@ -1,4 +1,4 @@
-package com.ltpc.study.core.thread.ch4.ch4_2;
+package com.ltpc.study.core.thread.ch4.c02;
 
 import java.util.concurrent.TimeUnit;
 
@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit;
 public class TicketWindowRunnable implements Runnable {
     private int index = 1;
 
-    private static final int MAX = 500;
+    private static final int MAX = 20;
 
     private static final Object MUTEX = new Object();
     /**
@@ -28,18 +28,25 @@ public class TicketWindowRunnable implements Runnable {
      */
     @Override
     public void run() {
+        synchronized (MUTEX) {
+            System.out.println(Thread.currentThread().getName()+",index="+index);
             while (index <= MAX) {
-                showNum();
+                System.out.println(Thread.currentThread().getName() + "，当前号码：" + (index++));
                 try {
                     TimeUnit.SECONDS.sleep(1);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             }
-    }
+        }
+        try {
+            System.out.println(Thread.currentThread().getName()+" sleep start.");
+            TimeUnit.SECONDS.sleep(1);
+            System.out.println(Thread.currentThread().getName()+" sleep end.");
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
-    private synchronized void showNum(){
-        System.out.println(Thread.currentThread().getName() + "，当前号码：" + (index++));
     }
 
     public static void main(String[] args) {
@@ -52,7 +59,6 @@ public class TicketWindowRunnable implements Runnable {
 
         windowsThread1.start();
         windowsThread2.start();
-
         windowsThread3.start();
         windowsThread4.start();
     }
