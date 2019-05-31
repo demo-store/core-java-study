@@ -1,9 +1,11 @@
 package com.ltpc.study.core.thread.ch5.c04;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Created with IntelliJ IDEA.
@@ -53,7 +55,7 @@ public class BooleanLock implements Lock{
      * @throws InterruptedException
      */
     @Override
-    public void lock(long mills) throws InterruptedException {
+    public void lock(long mills) throws InterruptedException, TimeoutException {
         synchronized (this) {
             if (mills <= 0) {
                 this.lock();
@@ -65,15 +67,15 @@ public class BooleanLock implements Lock{
                 final Thread tempThread = Thread.currentThread();
                 if (remainingMills <= 0){
                     this.blockList.remove(tempThread);
-                    throw new InterruptedException("can not get the lock during " + mills + " ms.");
+                    throw new TimeoutException("can not get the lock during " + mills + " ms.");
                 }
 
                 try {
                     if (!blockList.contains(tempThread)){
                         blockList.add(tempThread);
                     }
-                    this.wait(mills);
-                    remainingMills = System.currentTimeMillis() - endMills;
+                    this.wait(remainingMills);
+                    remainingMills = endMills - System.currentTimeMillis();
                 } catch (InterruptedException e) {
                     this.blockList.remove(tempThread);
                     throw e;
@@ -95,7 +97,8 @@ public class BooleanLock implements Lock{
                 return;
             }
             this.locker = false;
-            Optional.of(Thread.currentThread().getName() + " release the lock.").isPresent();
+            System.out.println(LocalDateTime.now()+": ");
+            Optional.of(Thread.currentThread().getName() + " release the lock.").ifPresent(System.out::println);
             this.notifyAll();
         }
     }

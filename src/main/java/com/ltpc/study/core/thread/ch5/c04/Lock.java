@@ -1,6 +1,7 @@
 package com.ltpc.study.core.thread.ch5.c04;
 
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Created with IntelliJ IDEA.
@@ -21,7 +22,7 @@ public interface Lock {
      * @param mills
      * @throws InterruptedException
      */
-    void lock(long mills) throws InterruptedException;
+    void lock(long mills) throws InterruptedException, TimeoutException;
 
     /**
      * 用于锁的释放
