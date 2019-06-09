@@ -1,4 +1,4 @@
-package com.ltpc.study.core.thread.ch7;
+package com.ltpc.study.core.thread.ch7.ch1;
 
 import java.util.concurrent.TimeUnit;
 
