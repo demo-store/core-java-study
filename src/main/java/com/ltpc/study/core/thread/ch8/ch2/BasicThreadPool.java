@@ -3,6 +3,7 @@ package com.ltpc.study.core.thread.ch8.ch2;
 import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 
 /**
@@ -96,7 +97,17 @@ public class BasicThreadPool extends Thread implements ThreadPool {
      */
     @Override
     public void shutdown() {
-
+        synchronized (this){
+            if (isShutdown){
+                return;
+            }
+            isShutdown = true;
+            threadQueue.forEach(threadTask -> {
+                threadTask.internalTask.stop();
+                threadTask.thread.interrupt();
+            });
+            this.interrupt();
+        }
     }
 
     /**
@@ -106,7 +117,10 @@ public class BasicThreadPool extends Thread implements ThreadPool {
      */
     @Override
     public int getInitSize() {
-        return 0;
+        if (isShutdown){
+            throw new IllegalStateException("The thread pool is destory");
+        }
+        return this.initSize;
     }
 
     /**
@@ -116,7 +130,10 @@ public class BasicThreadPool extends Thread implements ThreadPool {
      */
     @Override
     public int getMaxSize() {
-        return 0;
+        if (isShutdown){
+            throw new IllegalStateException("The thread pool is destory");
+        }
+        return this.maxSize;
     }
 
     /**
@@ -126,7 +143,10 @@ public class BasicThreadPool extends Thread implements ThreadPool {
      */
     @Override
     public int getCoreSize() {
-        return 0;
+        if (isShutdown){
+            throw new IllegalStateException("The thread pool is destory");
+        }
+        return this.coreSize;
     }
 
     /**
@@ -136,7 +156,10 @@ public class BasicThreadPool extends Thread implements ThreadPool {
      */
     @Override
     public int getQueueSize() {
-        return 0;
+        if (isShutdown){
+            throw new IllegalStateException("The thread pool is destory");
+        }
+        return runnableQueue.size();
     }
 
     /**
@@ -146,7 +169,9 @@ public class BasicThreadPool extends Thread implements ThreadPool {
      */
     @Override
     public int getActiveCount() {
-        return 0;
+        synchronized (this){
+            return this.activeCount;
+        }
     }
 
     /**
@@ -156,12 +181,45 @@ public class BasicThreadPool extends Thread implements ThreadPool {
      */
     @Override
     public boolean isShutdown() {
-        return false;
+        return this.isShutdown;
     }
 
     @Override
     public void run(){
-
+        // run方法集成Thread，主要用于维护线程数量，比如扩容、回收等工作。
+        while (!isShutdown && !isInterrupted()){
+            try {
+                timeUnit.sleep(keepAliveTime);
+            } catch (InterruptedException e) {
+                isShutdown = true;
+                break;
+            }
+            synchronized (this){
+                if (isShutdown){
+                    break;
+                }
+                // 若任务队列中存在任务未处理，且活跃线程数小于核心线程数则继续扩容
+                if (runnableQueue.size() > 0 && activeCount < coreSize){
+                    for (int i = initSize; i < coreSize; i++) {
+                        newThread();
+                    }
+                    // 不要让线程的扩容直接到maxsize
+                    continue;
+                }
+                // 若任务队列中存在任务未处理，且活跃线程数小于最大线程数则继续扩容
+                if (runnableQueue.size() > 0 && activeCount < maxSize){
+                    for (int i = coreSize; i < maxSize; i++) {
+                        newThread();
+                    }
+                }
+                // 若任务队列中不存在未处理任务，则回收线程指核心线程数量
+                if (runnableQueue.size() == 0 && activeCount > coreSize){
+                    for (int i = coreSize; i < activeCount; i++) {
+                        removeThread();
+                    }
+                }
+            }
+        }
     }
 
     private void newThread(){
@@ -195,9 +253,15 @@ public class BasicThreadPool extends Thread implements ThreadPool {
 
     private static class DefaultThreadFactory implements ThreadFactory{
 
+        public static final AtomicInteger GROUP_COUNTER = new AtomicInteger(1);
+
+        public static final AtomicInteger COUNTER = new AtomicInteger(0);
+
+        public static final ThreadGroup group = new ThreadGroup("ltThreadGroup-"+GROUP_COUNTER.getAndDecrement());
+
         @Override
         public Thread createThread(Runnable runnable) {
-            return null;
+            return new Thread(group, runnable, "thread-pool-"+COUNTER.getAndDecrement());
         }
     }
 }
